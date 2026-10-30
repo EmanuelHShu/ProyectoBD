@@ -1,2 +1,2 @@
 # ProyectoBD
-Emanuel Shu - Nicolas Lozano - Sabrina Pereira
+Emanuel Shu - Nicolas Lozano - Sabrina Pereira - Sebastian Berardi
