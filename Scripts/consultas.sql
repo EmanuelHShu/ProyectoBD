@@ -16,8 +16,8 @@ SELECT
     p.dia,
     t.hora_inicio,
     el.nombre AS equipo_local,
-    COALESCE(vr.goles_local, '-') AS goles_local,
-    COALESCE(vr.goles_visitante, '-') AS goles_visitante,
+    CASE WHEN p.estado = 'jugado' THEN vr.goles_local ELSE '-' END AS goles_local,
+    CASE WHEN p.estado = 'jugado' THEN vr.goles_visitante ELSE '-' END AS goles_visitante,
     ev.nombre AS equipo_visitante,
     p.nombre_cancha,
     p.estado
@@ -66,33 +66,36 @@ WHERE s.id_torneo = 1;
 -- =========================================================================
 
 -- Tabla de posiciones de una edición del torneo
+-- (LEFT JOIN: un equipo sin partidos jugados aparece igual, con todo en 0)
 SELECT
     e.nombre AS equipo,
     COUNT(p.id_partido) AS pj,
-    SUM(CASE
+    COALESCE(SUM(CASE
         WHEN (p.id_equipo_local = e.id_equipo AND p.goles_local > p.goles_visitante) OR
              (p.id_equipo_visitante = e.id_equipo AND p.goles_visitante > p.goles_local) THEN 1
         ELSE 0
-    END) AS pg,
-    SUM(CASE WHEN p.goles_local = p.goles_visitante THEN 1 ELSE 0 END) AS pe,
-    SUM(CASE
+    END), 0) AS pg,
+    COALESCE(SUM(CASE WHEN p.goles_local = p.goles_visitante THEN 1 ELSE 0 END), 0) AS pe,
+    COALESCE(SUM(CASE
         WHEN (p.id_equipo_local = e.id_equipo AND p.goles_local < p.goles_visitante) OR
              (p.id_equipo_visitante = e.id_equipo AND p.goles_visitante < p.goles_local) THEN 1
         ELSE 0
-    END) AS pp,
-    SUM(CASE WHEN p.id_equipo_local = e.id_equipo THEN p.goles_local ELSE p.goles_visitante END) AS gf,
-    SUM(CASE WHEN p.id_equipo_local = e.id_equipo THEN p.goles_visitante ELSE p.goles_local END) AS gc,
-    (SUM(CASE WHEN p.id_equipo_local = e.id_equipo THEN p.goles_local ELSE p.goles_visitante END) -
-     SUM(CASE WHEN p.id_equipo_local = e.id_equipo THEN p.goles_visitante ELSE p.goles_local END)) AS dg,
-    (SUM(CASE
+    END), 0) AS pp,
+    COALESCE(SUM(CASE WHEN p.id_equipo_local = e.id_equipo THEN p.goles_local ELSE p.goles_visitante END), 0) AS gf,
+    COALESCE(SUM(CASE WHEN p.id_equipo_local = e.id_equipo THEN p.goles_visitante ELSE p.goles_local END), 0) AS gc,
+    COALESCE(SUM(CASE WHEN p.id_equipo_local = e.id_equipo THEN p.goles_local ELSE p.goles_visitante END) -
+             SUM(CASE WHEN p.id_equipo_local = e.id_equipo THEN p.goles_visitante ELSE p.goles_local END), 0) AS dg,
+    COALESCE(SUM(CASE
         WHEN (p.id_equipo_local = e.id_equipo AND p.goles_local > p.goles_visitante) OR
              (p.id_equipo_visitante = e.id_equipo AND p.goles_visitante > p.goles_local) THEN 3
         WHEN p.goles_local = p.goles_visitante THEN 1
         ELSE 0
-    END)) AS puntos
+    END), 0) AS puntos
 FROM equipo e
-JOIN v_resultado_partido p ON e.id_equipo = p.id_equipo_local OR e.id_equipo = p.id_equipo_visitante
-WHERE p.estado = 'jugado' AND e.id_torneo = 1
+LEFT JOIN v_resultado_partido p
+    ON (e.id_equipo = p.id_equipo_local OR e.id_equipo = p.id_equipo_visitante)
+   AND p.estado = 'jugado'
+WHERE e.id_torneo = 1
 GROUP BY e.id_equipo, e.nombre
 ORDER BY puntos DESC, dg DESC, gf DESC;
 
@@ -124,7 +127,7 @@ FROM equipo e
 LEFT JOIN equipo_jugador_torneo ejt ON e.id_equipo = ejt.id_equipo
 LEFT JOIN planilla_partido pa ON ejt.ci_jugador = pa.ci_jugador AND ejt.id_equipo = pa.id_equipo
 LEFT JOIN partido p ON pa.id_partido = p.id_partido AND p.estado = 'jugado' AND p.id_torneo = e.id_torneo
-LEFT JOIN tarjeta t ON pa.id_partido = t.id_partido AND pa.ci_jugador = t.ci_jugador
+LEFT JOIN tarjeta t ON p.id_partido = t.id_partido AND pa.ci_jugador = t.ci_jugador
 WHERE e.id_torneo = 1
 GROUP BY e.id_equipo, e.nombre
 ORDER BY puntaje ASC, rojas ASC, amarillas ASC;

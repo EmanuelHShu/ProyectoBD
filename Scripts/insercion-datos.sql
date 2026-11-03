@@ -68,24 +68,30 @@ INSERT INTO jugador (ci, nombre, apellido, email, fecha_nacimiento, id_facultad,
 ('66666664', 'Tomas', 'Pereira', 'tomas.pereira@correo.com', '2000-11-28', 6, 'grado'),
 ('66666665', 'Rocio', 'Lima', 'rocio.lima@correo.com', '1997-02-05', 6, 'posgrado');
 
--- 4. TORNEO (Edicion 2026-2 en curso)
+-- 4. TORNEO (Edicion 2026-2). Se crea en 'inscripcion' porque los planteles solo
+-- pueden cargarse en esa etapa; se pasa a 'en curso' luego de armar los planteles.
 INSERT INTO torneo (id_torneo, nombre, anio, semestre, fecha_inicio, fecha_fin, estado) VALUES
-(1, 'Torneo Interfacultades 2026-2', 2026, 2, '2026-08-01', '2026-11-30', 'en curso');
+(1, 'Torneo Interfacultades 2026-2', 2026, 2, '2026-08-01', '2026-11-30', 'inscripcion');
 
 -- 5. COMPLEJO
 INSERT INTO complejo (id_complejo, nombre, direccion, departamento) VALUES
-(1, 'Complejo Deportivo Central', 'Av. Italia 2500', 'Montevideo');
+(1, 'Complejo Deportivo Central', 'Av. Italia 2500', 'Montevideo'),
+(2, 'Complejo Deportivo Norte', 'Ruta 8 km 17', 'Canelones');
 
 -- 6. CANCHA
 INSERT INTO cancha (nombre_cancha, id_complejo, superficie, techada) VALUES
-('Cancha 1', 1, 'sintético', true),
-('Cancha 2', 1, 'sintético', false);
+('Cancha 1', 1, 'sintetico', true),
+('Cancha 2', 1, 'sintetico', false),
+('Cancha A', 2, 'parquet', true),
+('Cancha B', 2, 'sintetico', false);
 
 -- 7. TURNO
 INSERT INTO turno (id_turno, hora_inicio, hora_fin) VALUES
 (1, '18:00:00', '19:00:00'),
 (2, '19:00:00', '20:00:00'),
-(3, '20:00:00', '21:00:00');
+(3, '20:00:00', '21:00:00'),
+(4, '21:00:00', '22:00:00'),
+(5, '22:00:00', '23:00:00');
 
 -- 8. EQUIPO (6 equipos, uno por facultad)
 INSERT INTO equipo (id_equipo, nombre, id_torneo, id_facultad, ci_capitan) VALUES
@@ -96,7 +102,7 @@ INSERT INTO equipo (id_equipo, nombre, id_torneo, id_facultad, ci_capitan) VALUE
 (5, 'Arquitectura City', 1, 5, '55555551'),
 (6, 'Psicologia Sporting', 1, 6, '66666661');
 
--- 9. PLANTELES (Planteles de 5 jugadores cada uno)
+-- 9. PLANTELES (Planteles de 5 jugadores; Ingenieria FC tiene 6 e incluye a un docente que nunca firma planilla)
 
 -- Ingenieria FC (Equipo 1)
 INSERT INTO equipo_jugador_torneo (id_equipo, ci_jugador, id_torneo, numero_camiseta) VALUES
@@ -104,7 +110,8 @@ INSERT INTO equipo_jugador_torneo (id_equipo, ci_jugador, id_torneo, numero_cami
 (1, '11111112', 1, 5),
 (1, '11111113', 1, 7),
 (1, '11111114', 1, 8),
-(1, '11111115', 1, 9);
+(1, '11111115', 1, 9),
+(1, '11111116', 1, 11);
 
 -- Administracion United (Equipo 2)
 INSERT INTO equipo_jugador_torneo (id_equipo, ci_jugador, id_torneo, numero_camiseta) VALUES
@@ -146,25 +153,41 @@ INSERT INTO equipo_jugador_torneo (id_equipo, ci_jugador, id_torneo, numero_cami
 (6, '66666664', 1, 5),
 (6, '66666665', 1, 8);
 
+-- Cierre de la inscripcion: el trigger verifica que cada capitan este en su plantel
+UPDATE torneo SET estado = 'en curso' WHERE id_torneo = 1;
+
 -- 10. PARTIDO (Al menos 3 fechas disputadas con estado jugado)
+-- Los partidos de las fechas 1 a 3 se cargan como 'programado' y se marcan 'jugado'
+-- al final del script: asi se pueden registrar planillas, goles y tarjetas sin que
+-- la ventana de correccion de 48 horas bloquee la carga de datos historicos.
 
 -- Fecha 1
 INSERT INTO partido (id_partido, id_torneo, numero_fecha, id_equipo_local, id_equipo_visitante, dia, id_turno, nombre_cancha, id_complejo, estado) VALUES
-(1, 1, 1, 1, 2, '2026-08-10', 1, 'Cancha 1', 1, 'jugado'),
-(2, 1, 1, 3, 4, '2026-08-10', 2, 'Cancha 1', 1, 'jugado'),
-(3, 1, 1, 5, 6, '2026-08-10', 3, 'Cancha 1', 1, 'jugado');
+(1, 1, 1, 1, 2, '2026-08-10', 1, 'Cancha 1', 1, 'programado'),
+(2, 1, 1, 3, 4, '2026-08-10', 2, 'Cancha 1', 1, 'programado'),
+(3, 1, 1, 5, 6, '2026-08-10', 3, 'Cancha 1', 1, 'programado');
 
 -- Fecha 2
 INSERT INTO partido (id_partido, id_torneo, numero_fecha, id_equipo_local, id_equipo_visitante, dia, id_turno, nombre_cancha, id_complejo, estado) VALUES
-(4, 1, 2, 1, 3, '2026-08-17', 1, 'Cancha 1', 1, 'jugado'),
-(5, 1, 2, 2, 5, '2026-08-17', 2, 'Cancha 1', 1, 'jugado'),
-(6, 1, 2, 4, 6, '2026-08-17', 3, 'Cancha 1', 1, 'jugado');
+(4, 1, 2, 1, 3, '2026-08-17', 1, 'Cancha 1', 1, 'programado'),
+(5, 1, 2, 2, 5, '2026-08-17', 2, 'Cancha 1', 1, 'programado'),
+(6, 1, 2, 4, 6, '2026-08-17', 3, 'Cancha A', 2, 'programado');
 
 -- Fecha 3
 INSERT INTO partido (id_partido, id_torneo, numero_fecha, id_equipo_local, id_equipo_visitante, dia, id_turno, nombre_cancha, id_complejo, estado) VALUES
-(7, 1, 3, 1, 4, '2026-08-24', 1, 'Cancha 1', 1, 'jugado'),
-(8, 1, 3, 2, 6, '2026-08-24', 2, 'Cancha 1', 1, 'jugado'),
-(9, 1, 3, 3, 5, '2026-08-24', 3, 'Cancha 1', 1, 'jugado');
+(7, 1, 3, 1, 4, '2026-08-24', 1, 'Cancha 1', 1, 'programado'),
+(8, 1, 3, 2, 6, '2026-08-24', 2, 'Cancha 1', 1, 'programado'),
+(9, 1, 3, 3, 5, '2026-08-24', 3, 'Cancha A', 2, 'programado');
+
+-- Fecha 4 (pendiente: programados y postergado)
+INSERT INTO partido (id_partido, id_torneo, numero_fecha, id_equipo_local, id_equipo_visitante, dia, id_turno, nombre_cancha, id_complejo, estado) VALUES
+(10, 1, 4, 1, 5, '2026-11-09', 1, 'Cancha 1', 1, 'programado'),
+(11, 1, 4, 2, 4, '2026-11-09', 2, 'Cancha 1', 1, 'postergado'),
+(12, 1, 4, 3, 6, '2026-11-09', 3, 'Cancha 1', 1, 'programado');
+
+-- Fecha 5 (partido cancelado)
+INSERT INTO partido (id_partido, id_torneo, numero_fecha, id_equipo_local, id_equipo_visitante, dia, id_turno, nombre_cancha, id_complejo, estado) VALUES
+(13, 1, 5, 1, 6, '2026-11-16', 1, 'Cancha 1', 1, 'cancelado');
 
 -- 11. PLANILLA_PARTIDO (Jugadores que firman planilla en los partidos)
 
@@ -193,10 +216,10 @@ INSERT INTO planilla_partido (id_partido, ci_jugador, id_equipo) VALUES
 (5, '22222221', 2), (5, '22222222', 2), (5, '22222224', 2),
 (5, '55555551', 5), (5, '55555552', 5), (5, '55555554', 5);
 
--- Partido 6
+-- Partido 6 (fecha 2): 66666661 (roja en fecha 1) y 66666662 (sancion disciplinaria) estan suspendidos, por eso no firman
 INSERT INTO planilla_partido (id_partido, ci_jugador, id_equipo) VALUES
 (6, '44444441', 4), (6, '44444442', 4), (6, '44444444', 4),
-(6, '66666661', 6), (6, '66666662', 6), (6, '66666664', 6);
+(6, '66666663', 6), (6, '66666664', 6), (6, '66666665', 6);
 
 -- Partido 7
 INSERT INTO planilla_partido (id_partido, ci_jugador, id_equipo) VALUES
@@ -238,3 +261,6 @@ INSERT INTO tarjeta (id_partido, ci_jugador, minuto, color) VALUES
 -- 14. SANCION_JUGADOR (Sanciones registradas)
 INSERT INTO sancion_jugador (ci_jugador, id_torneo, motivo, numero_fecha_inicio, cantidad_fechas) VALUES
 ('66666662', 1, 'disciplinaria', 2, 2);
+
+-- 15. CIERRE DE LAS FECHAS 1 A 3: se marcan como jugados (el trigger valida que el turno ya paso)
+UPDATE partido SET estado = 'jugado' WHERE id_partido BETWEEN 1 AND 9;
