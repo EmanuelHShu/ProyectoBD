@@ -1,0 +1,8 @@
+{% extends 'base.html' %}{% block title %}Fixture{% endblock %}{% block body %}
+<div class="page-head"><div><p class="eyebrow">COMPETICIÓN</p><h1>Fixture y resultados</h1><p class="muted">Elegí una edición para consultar partidos y cargar planillas.</p></div>{% if logged_user.rol=='administrador' %}<a class="primary btn" href="{{ url_for('create_entity',entity='partido') }}">+ Programar partido</a>{% endif %}</div>
+<form class="filter" method="get"><label>Edición <select name="torneo">{% for t in editions %}<option value="{{ t.id_torneo }}" {% if chosen==t.id_torneo %}selected{% endif %}>{{ t.nombre }} ({{ t.anio }}-{{ t.semestre }})</option>{% endfor %}</select></label><button class="btn outline">Consultar</button></form>
+<section class="panel"><div class="table-wrap"><table><thead><tr><th>Fecha</th><th>Día</th><th>Hora</th><th>Local</th><th>Resultado</th><th>Visitante</th><th>Cancha</th><th>Estado</th><th></th></tr></thead><tbody>
+{% for p in rows %}<tr><td>{{ p.numero_fecha }}</td><td>{{ p.dia|show }}</td><td>{{ p.hora_inicio|show }}</td><td><b>{{ p.local }}</b></td><td class="score">{{ (p.goles_local ~ ' – ' ~ p.goles_visitante) if p.estado=='jugado' else '—' }}</td><td><b>{{ p.visitante }}</b></td><td>{{ p.complejo }} · {{ p.cancha }}</td><td><span class="tag">{{ p.estado }}</span></td><td><a href="{{ url_for('match_view',id_partido=p.id_partido) }}">Planilla</a></td></tr>
+{% else %}<tr><td colspan="9">Esta edición todavía no tiene partidos.</td></tr>{% endfor %}
+</tbody></table></div></section>
+{% endblock %}

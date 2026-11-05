@@ -1,0 +1,24 @@
+{% extends 'base.html' %}{% block title %}{{ 'Editar' if editing else 'Crear' }} {{ schema.title }}{% endblock %}
+{% block body %}<div class="page-head"><div><p class="eyebrow">ADMINISTRACIÓN</p><h1>{{ 'Editar' if editing else 'Crear' }} · {{ schema.title }}</h1></div><a class="btn outline" href="{{ url_for('catalog',entity=entity) }}">Volver</a></div>
+<section class="panel"><form method="post" class="edit-grid"><input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+{% for field in schema.fields %}
+{% set readonly=editing and field.name in schema.pk %}
+<div class="form-field"><label for="f_{{ field.name }}">{{ field.label }}{% if field.required and not readonly %} *{% endif %}</label>
+{% set val=as_str(row.get(field.name,'')) %}
+{% if readonly %}<input id="f_{{ field.name }}" value="{{ val }}" disabled><small>La clave primaria no puede modificarse.</small>
+{% elif field.kind in ['select','ref'] %}
+<select id="f_{{ field.name }}" name="{{ field.name }}" {% if field.required %}required{% endif %}>
+<option value="">Seleccionar…</option>
+{% if field.kind=='select' %}{% for choice in field.options %}<option value="{{ choice }}" {% if val==choice %}selected{% endif %}>{{ choice }}</option>{% endfor %}
+{% else %}{% for opt in options.get(field.name,[]) %}<option value="{{ opt.k }}" {% if val==opt.k|string %}selected{% endif %}>{{ opt.label }}</option>{% endfor %}{% endif %}
+</select>
+{% else %}<input id="f_{{ field.name }}" name="{{ field.name }}" type="{{ 'number' if field.kind=='int' else 'password' if field.kind=='password' else field.kind if field.kind in ['email','date','time'] else 'text' }}"
+ value="{{ '' if field.kind=='password' else val }}" {% if field.kind=='int' and field.minimum %}min="{{ field.minimum }}"{% endif %} maxlength="{{ field.maxlen }}" {% if field.required and field.kind!='password' %}required{% endif %} {% if field.kind=='password' %}autocomplete="new-password" placeholder="{{ 'Dejar vacío para conservarla' if editing else 'Al menos 10 caracteres' }}"{% endif %}>
+{% endif %}
+</div>
+{% endfor %}
+{% if entity=='partido' %}<p class="hint form-wide">La cancha se identifica por nombre + complejo. Los equipos deben pertenecer a la edición indicada y el fixture no debe superponerse.</p>{% endif %}
+{% if entity=='equipo' %}<p class="hint form-wide">Al crear un equipo se asigna capitán y luego se inscribe en su plantel. La BD verifica los capitanes al cerrar inscripción.</p>{% endif %}
+{% if entity=='sancion_jugador' %}<p class="hint form-wide">Desde esta pantalla solo se crean sanciones disciplinarias. Las de tarjetas se generan automáticamente.</p>{% endif %}
+<div class="form-wide"><button class="primary" type="submit">{{ 'Guardar cambios' if editing else 'Crear registro' }}</button></div>
+</form></section>{% endblock %}
