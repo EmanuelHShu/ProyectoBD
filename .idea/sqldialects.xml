@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project version="4">
+  <component name="SqlDialectMappings">
+    <file url="file://$APPLICATION_CONFIG_DIR$/consoles/db/cde19bbd-567d-42a8-9600-4bc538b3256b/console.sql" dialect="MySQL" />
+    <file url="file://$PROJECT_DIR$/Scripts/consultas.sql" dialect="MySQL" />
+    <file url="file://$PROJECT_DIR$/Scripts/creacion-tablas.sql" dialect="MySQL" />
+    <file url="file://$PROJECT_DIR$/Scripts/insercion-datos.sql" dialect="MySQL" />
+    <file url="file://$PROJECT_DIR$/Scripts/seguriad-roles.sql" dialect="MySQL" />
+    <file url="file://$PROJECT_DIR$/Scripts/triggers-automaticos.sql" dialect="MySQL" />
+  </component>
+</project>
