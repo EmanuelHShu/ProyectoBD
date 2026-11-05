@@ -88,6 +88,7 @@ CREATE TABLE equipo_jugador_torneo (
     id_torneo INT NOT NULL,
     numero_camiseta TINYINT NOT NULL,
     PRIMARY KEY (id_equipo, ci_jugador, id_torneo),
+    CONSTRAINT chk_ejt_camiseta CHECK (numero_camiseta BETWEEN 1 AND 99),
     -- Garantiza que un jugador no integre mas de un equipo en la misma edicion
     CONSTRAINT uk_ejt_jugador_torneo UNIQUE (ci_jugador, id_torneo),
     -- Evita dorsales duplicados en el mismo plantel
@@ -135,46 +136,46 @@ CREATE TABLE turno (
     hora_inicio TIME NOT NULL,
     hora_fin TIME NOT NULL,
     PRIMARY KEY (id_turno),
-    CONSTRAINT uk_turno_horas UNIQUE (hora_inicio, hora_fin)
+    CONSTRAINT uk_turno_horas UNIQUE (hora_inicio, hora_fin),
+    -- Turnos de una hora dentro de la franja 18:00 - 23:00
+    CONSTRAINT chk_turno_franja CHECK (hora_inicio >= '18:00:00' AND hora_fin <= '23:00:00'),
+    CONSTRAINT chk_turno_duracion CHECK (TIME_TO_SEC(hora_fin) - TIME_TO_SEC(hora_inicio) = 3600)
 );
-
--- 10. PARTIDO
-CREATE TABLE partido (
-    id_partido INT AUTO_INCREMENT NOT NULL,
-    id_torneo INT NOT NULL,
-    numero_fecha TINYINT NOT NULL,
-    id_equipo_local INT NOT NULL,
-    id_equipo_visitante INT NOT NULL,
-    dia DATE NOT NULL,
-    id_turno INT NOT NULL,
-    nombre_cancha VARCHAR(100) NOT NULL,
-    id_complejo INT NOT NULL,
-    estado ENUM('programado', 'jugado', 'postergado', 'cancelado') NOT NULL,
-    -- Clave primaria compuesta exigida por la letra
-    PRIMARY KEY (id_partido, id_torneo),
-    -- Unique auxiliar para permitir referencias foraneas directas desde tablas dependientes
-    CONSTRAINT uk_partido_id UNIQUE (id_partido),
-    CONSTRAINT chk_partido_equipos CHECK (id_equipo_local <> id_equipo_visitante),
-    CONSTRAINT fk_partido_torneo FOREIGN KEY (id_torneo)
-        REFERENCES torneo(id_torneo)
-        ON UPDATE CASCADE
-        ON DELETE RESTRICT,
-    CONSTRAINT fk_partido_local FOREIGN KEY (id_equipo_local, id_torneo)
-        REFERENCES equipo(id_equipo, id_torneo)
-        ON UPDATE CASCADE
-        ON DELETE RESTRICT,
-    CONSTRAINT fk_partido_visitante FOREIGN KEY (id_equipo_visitante, id_torneo)
-        REFERENCES equipo(id_equipo, id_torneo)
-        ON UPDATE CASCADE
-        ON DELETE RESTRICT,
-    CONSTRAINT fk_partido_turno FOREIGN KEY (id_turno)
-        REFERENCES turno(id_turno)
-        ON UPDATE CASCADE
-        ON DELETE RESTRICT,
-    CONSTRAINT fk_partido_cancha FOREIGN KEY (nombre_cancha, id_complejo)
-        REFERENCES cancha(nombre_cancha, id_complejo)
-        ON UPDATE CASCADE
-        ON DELETE RESTRICT
+-- 10. PARTIDO 
+CREATE TABLE partido ( 
+id_partido INT AUTO_INCREMENT NOT NULL, 
+id_torneo INT NOT NULL, 
+numero_fecha TINYINT NOT NULL, 
+id_equipo_local INT NOT NULL, 
+id_equipo_visitante INT NOT NULL, 
+dia DATE NOT NULL, 
+id_turno INT NOT NULL, 
+nombre_cancha VARCHAR(100) NOT NULL, 
+id_complejo INT NOT NULL, 
+estado ENUM('programado', 'jugado', 'postergado', 'cancelado') NOT NULL, 
+PRIMARY KEY (id_partido), 
+CONSTRAINT chk_partido_equipos CHECK (id_equipo_local <> id_equipo_visitante), 
+CONSTRAINT chk_partido_fecha CHECK (numero_fecha >= 1), 
+CONSTRAINT fk_partido_torneo FOREIGN KEY (id_torneo) 
+	REFERENCES torneo(id_torneo) 
+    ON UPDATE CASCADE 
+    ON DELETE RESTRICT, 
+CONSTRAINT fk_partido_local FOREIGN KEY (id_equipo_local, id_torneo) 
+	REFERENCES equipo(id_equipo, id_torneo) 
+    ON UPDATE RESTRICT 
+    ON DELETE RESTRICT, 
+CONSTRAINT fk_partido_visitante FOREIGN KEY (id_equipo_visitante, id_torneo) 
+	REFERENCES equipo(id_equipo, id_torneo) 
+    ON UPDATE RESTRICT 
+    ON DELETE RESTRICT, 
+CONSTRAINT fk_partido_turno FOREIGN KEY (id_turno) 
+	REFERENCES turno(id_turno) 
+    ON UPDATE CASCADE 
+    ON DELETE RESTRICT, 
+CONSTRAINT fk_partido_cancha FOREIGN KEY (nombre_cancha, id_complejo) 
+	REFERENCES cancha(nombre_cancha, id_complejo) 
+    ON UPDATE CASCADE 
+    ON DELETE RESTRICT 
 );
 
 -- 11. PLANILLA_PARTIDO
@@ -205,6 +206,7 @@ CREATE TABLE gol (
     minuto TINYINT NOT NULL,
     autogol BOOLEAN NOT NULL,
     PRIMARY KEY (id_gol),
+    CONSTRAINT chk_gol_minuto CHECK (minuto BETWEEN 0 AND 120),
     -- Integridad referencial compuesta hacia planilla_partido (Decision de Diseño #1)
     CONSTRAINT fk_gol_planilla FOREIGN KEY (id_partido, ci_jugador)
         REFERENCES planilla_partido(id_partido, ci_jugador)
@@ -221,6 +223,7 @@ CREATE TABLE tarjeta (
     minuto TINYINT NOT NULL,
     color ENUM('amarilla', 'roja') NOT NULL,
     PRIMARY KEY (id_tarjeta),
+    CONSTRAINT chk_tarjeta_minuto CHECK (minuto BETWEEN 0 AND 120),
     -- Integridad referencial compuesta hacia planilla_partido (Decision de Diseño #1)
     CONSTRAINT fk_tarjeta_planilla FOREIGN KEY (id_partido, ci_jugador)
         REFERENCES planilla_partido(id_partido, ci_jugador)
@@ -236,7 +239,11 @@ CREATE TABLE sancion_jugador (
     motivo ENUM('roja', 'acumulacion de amarillas', 'disciplinaria') NOT NULL,
     numero_fecha_inicio TINYINT NOT NULL,
     cantidad_fechas TINYINT NOT NULL,
+    -- Tarjeta que origino la sancion automatica (NULL = sancion cargada a mano, ej. disciplinaria)
+    id_tarjeta INT NULL,
     PRIMARY KEY (id_sancion),
+    CONSTRAINT chk_sancion_fecha_inicio CHECK (numero_fecha_inicio >= 1),
+    CONSTRAINT chk_sancion_cantidad CHECK (cantidad_fechas >= 1),
     CONSTRAINT fk_sancion_ejt FOREIGN KEY (ci_jugador, id_torneo)
         REFERENCES equipo_jugador_torneo(ci_jugador, id_torneo)
         ON UPDATE CASCADE
@@ -248,5 +255,9 @@ CREATE TABLE sancion_jugador (
     CONSTRAINT fk_sancion_torneo FOREIGN KEY (id_torneo)
         REFERENCES torneo(id_torneo)
         ON UPDATE CASCADE
-        ON DELETE RESTRICT
+        ON DELETE RESTRICT,
+    CONSTRAINT fk_sancion_tarjeta FOREIGN KEY (id_tarjeta)
+        REFERENCES tarjeta(id_tarjeta)
+        ON UPDATE CASCADE
+        ON DELETE CASCADE
 );
