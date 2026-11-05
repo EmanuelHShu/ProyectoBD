@@ -1,3 +1,0 @@
-{% extends 'base.html' %}{% block title %}Reportes{% endblock %}{% block body %}<div class="page-head"><div><p class="eyebrow">ESTADÍSTICAS</p><h1>Reportes del torneo</h1><p class="muted">Consultas SQL reales, filtradas por edición cuando corresponde.</p></div></div>
-<div class="quick-grid">{% for slug,parts in reports.items() %}<a class="quick" href="{{ url_for('report_detail',slug=slug) }}"><b>{{ parts[0] }}</b><small>{{ parts[1] }}</small></a>{% endfor %}</div>
-{% endblock %}

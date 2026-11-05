@@ -1,9 +1,0 @@
-{% extends 'base.html' %}{% block title %}Iniciar sesión{% endblock %}
-{% block body %}<div class="login-layout"><div class="login-card"><div class="ball large">⚽</div>
-<h1>Bienvenido al torneo</h1><p class="muted">Ingresá con tu usuario para gestionar partidos y resultados.</p>
-<form method="post" class="form-stack"><input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-<label>Correo <input name="correo" type="email" required autocomplete="username" placeholder="admin@ucu.edu.uy"></label>
-<label>Contraseña <input name="password" type="password" required autocomplete="current-password"></label>
-<button class="primary" type="submit">Iniciar sesión</button></form>
-<p class="hint">Las credenciales de demostración están en el README. Cambialas antes de cualquier despliegue real.</p>
-</div></div>{% endblock %}
