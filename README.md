@@ -1,124 +1,131 @@
-# Torneo Interfacultades de Fútbol 5 — Base de Datos 1
+# Sistema de Gestión del Torneo Interfacultades de Fútbol 5
 
-**Universidad Católica del Uruguay · Segundo semestre de 2026**
+**Trabajo obligatorio de Base de Datos 1 — Universidad Católica del Uruguay — Segundo semestre de 2026**
 
 **Integrantes:** Emanuel Shu, Nicolás Lozano, Sabrina Pereira y Sebastián Berardi.
 
-Sistema para gestionar las ediciones del torneo universitario de fútbol 5: equipos, jugadores, planteles, calendario, planillas, goles, tarjetas, sanciones y reportes. La base de datos se desarrolla en **MySQL**; la aplicación complementaria utiliza **Python, Flask y PyMySQL, sin ORM**.
+Aplicación para gestionar las ediciones del torneo, jugadores, equipos, planteles, complejos, canchas, fixture, planillas, goles, tarjetas, sanciones y reportes. El proyecto utiliza **MySQL** para persistencia y reglas de integridad, y **Python + Flask** para la interfaz web. El acceso a la base se realiza con **PyMySQL**, mediante SQL directo y **sin ORM**.
 
-> **Estado de integración (05/11/2026).** El último ZIP recibido de `main` contiene los scripts SQL en `Scripts/`, pero **no contiene la carpeta `app/`**. Para ejecutar la interfaz hay que incorporar al repositorio la aplicación Python preparada por separado y luego verificarla con una instancia real de MySQL. Este README documenta tanto lo que ya existe en `main` como los pasos para completar esa integración; no implica que las pruebas de extremo a extremo estén aprobadas.
+> **Estado de la versión:** el último ZIP del repositorio contiene `Scripts/`, `app/` e `Informe BD.docx`. Se verificó la estructura y la sintaxis del código Python, pero **no se ha confirmado su ejecución integral contra MySQL**. Para instalar el proyecto desde cero también se necesitan `requirements.txt` y `.env.example`, que no venían en ese ZIP y se suministran junto con este README.
 
 ## 1. Estructura del proyecto
 
 ```text
 ProyectoBD/
-├── Scripts/                         # Existente en main: SQL del equipo
-│   ├── creacion-tablas.sql
-│   ├── triggers-automaticos.sql
-│   ├── insercion-datos.sql
-│   ├── consultas.sql
-│   └── seguridad-roles.sql
-├── app/                             # Agregar desde la integración Python
-│   ├── app.py
-│   ├── db.py
-│   ├── models.py
-│   ├── reports.py
-│   ├── templates/
-│   └── static/
-├── requirements.txt                 # Agregar con la aplicación Python
-├── .env.example                     # Agregar con la aplicación Python
-├── docs/
-│   └── informe_final.md
+├── Scripts/
+│   ├── creacion-tablas.sql       # Base y tablas
+│   ├── triggers-automaticos.sql  # Vista, función, procedimientos y triggers
+│   ├── insercion-datos.sql       # Datos de prueba y fixture
+│   ├── consultas.sql             # Consultas y reportes SQL
+│   ├── seguridad-roles.sql       # Roles y cuentas de MySQL
+│   └── seguriad-roles.sql        # Duplicado con errata (no ejecutar)
+├── app/
+│   ├── app.py                    # Rutas web, login y operaciones
+│   ├── db.py                     # Conexiones y transacciones MySQL
+│   ├── models.py                 # Formularios y validaciones
+│   ├── reports.py                # Reportes parametrizados
+│   ├── templates/                # Plantillas HTML
+│   └── static/                   # Estilos CSS
+├── Informe BD.docx              # Informe del trabajo
+├── requirements.txt             # Dependencias de Python (agregar)
+├── .env.example                 # Ejemplo de configuración (agregar)
 └── README.md
 ```
 
-En `main` también existe `Scripts/seguriad-roles.sql`, duplicado con el nombre mal escrito. El archivo que se debe ejecutar es **`Scripts/seguridad-roles.sql`**. No hace falta ejecutar ambos.
+El repositorio también contiene el PDF del avance y algunos archivos de configuración local de DataGrip (`.idea/`); **no son necesarios para levantar la aplicación**.
 
-## 2. Requisitos para ejecutar el sistema
+## 2. Requisitos
 
-- **MySQL Server 8.0 o compatible** en ejecución (DataGrip es solo el cliente para administrar ese servidor).
-- **DataGrip** u otro cliente que permita ejecutar archivos SQL.
-- **Python 3.11 o superior** y `pip` si se utilizará la interfaz web.
-- Un usuario de MySQL con permisos para **crear bases, tablas, vistas, triggers, funciones, procedimientos y usuarios/roles** durante la instalación. **No tiene que llamarse `root`**.
+- Windows con **Python 3.11 o superior** y `pip`.
+- **MySQL Server 8** o versión compatible en ejecución.
+- **DataGrip** u otro cliente SQL para instalar y revisar la base.
+- Una cuenta de MySQL con privilegios suficientes para crear bases de datos, tablas, vistas, funciones, procedimientos, triggers, roles y usuarios. **No tiene que ser `root`**, pero debe contar con los permisos necesarios.
 
-No se requiere Docker: la consigna lo considera un aspecto valorado, pero opcional.
+**Docker no es obligatorio** y no se utiliza en esta versión.
 
-## 3. Inicialización de MySQL desde DataGrip
+## 3. Preparar MySQL con DataGrip
 
-**Precaución:** `Scripts/creacion-tablas.sql` comienza con `DROP DATABASE IF EXISTS torneo_futbol5;`. **Borra la base existente y todos sus datos**. Hacer un respaldo y trabajar en una base de prueba si ya hay registros importantes.
+1. Iniciar el servicio **MySQL Server**. DataGrip es un cliente: por sí solo no ejecuta el servidor.
+2. En DataGrip, abrir la conexión MySQL y verificar **Test Connection**.
+3. En una consola SQL de esa conexión, ejecutar:
 
-1. Abrir DataGrip, conectar al servidor MySQL y verificar la conexión (`Test Connection`).
-2. Abrir una consola SQL sobre esa conexión y comprobar `SHOW DATABASES;`.
-3. Si es una instalación nueva o se ha autorizado recrear `torneo_futbol5`, ejecutar los archivos en este orden mediante **clic derecho en la conexión → SQL Scripts → Run SQL Script…**:
+   ```sql
+   SHOW DATABASES;
+   ```
+
+4. **Antes de continuar, comprobar si existe `torneo_futbol5`.** El primer script del proyecto comienza con `DROP DATABASE IF EXISTS torneo_futbol5;` y **elimina esa base y todos sus registros**. No ejecutarlo sobre datos que se quieran conservar; trabajar sobre una instancia de prueba o realizar un respaldo.
+5. En una instalación nueva, ejecutar los scripts mediante **clic derecho sobre la conexión → SQL Scripts → Run SQL Script…**, en este orden:
 
    1. `Scripts/creacion-tablas.sql`
    2. `Scripts/triggers-automaticos.sql`
    3. `Scripts/insercion-datos.sql`
-   4. Complemento del fixture **solo si faltan los cruces 2–3 y 4–5** (ver sección siguiente).
-   5. `Scripts/seguridad-roles.sql`
+   4. `Scripts/seguridad-roles.sql`
 
-4. Detenerse ante cualquier error. El orden es importante: los triggers necesitan las tablas, y la seguridad hace referencia a la vista y al procedimiento definidos en `triggers-automaticos.sql`.
-5. Actualizar el explorador de DataGrip para ver las tablas de `torneo_futbol5`.
+6. Ante cualquier error, **detener la secuencia**, leer el mensaje y corregirlo antes de ejecutar el siguiente archivo. Ejecutar los scripts completos, especialmente `triggers-automaticos.sql`, que utiliza `DELIMITER`.
 
-### 3.1. Fixture: evitar duplicados
+**Importante:** no ejecutar `seguriad-roles.sql`; es un duplicado de `seguridad-roles.sql` con el nombre mal escrito.
 
-El `insercion-datos.sql` del **último `main` recibido** incluye los partidos **1–13**; el partido 13 es el encuentro **1 vs. 6 cancelado**. Para completar los 15 enfrentamientos de seis equipos en una ronda, faltan 2–3 y 4–5. Si esos encuentros **no están insertados**, ejecutar **una sola vez**:
+### 3.1. Datos de prueba y fixture
 
-```sql
-USE torneo_futbol5;
-INSERT INTO partido
-(id_partido, id_torneo, numero_fecha, id_equipo_local, id_equipo_visitante,
- dia, id_turno, nombre_cancha, id_complejo, estado)
-VALUES
-(14, 1, 5, 2, 3, '2026-11-16', 2, 'Cancha 1', 1, 'programado'),
-(15, 1, 5, 4, 5, '2026-11-16', 3, 'Cancha 1', 1, 'programado');
-```
+El `insercion-datos.sql` del último ZIP ya incorpora los **15 partidos** necesarios para una liga de una rueda con 6 equipos. Se distribuyen en 5 fechas con 3 partidos en cada una. Los partidos **13, 14 y 15** de la fecha 5 figuran como **`programado`**.
 
-**Si usaron una copia editada del script de inserción que ya contiene 14 y 15, no ejecuten de nuevo este bloque.** Verifiquen además que esté el partido 13: en el script original estaba **cancelado**, una decisión que conviene conservar en vez de sobrescribirla.
+**No es necesario añadir otro script de fixture ni volver a insertar los partidos 13, 14 y 15.** La versión más antigua de los datos tenía el partido 13 cancelado, pero la versión actual lo deja programado.
 
-### 3.2. Verificaciones iniciales en DataGrip
+Al terminar, comprobar desde una consola SQL:
 
 ```sql
 USE torneo_futbol5;
 
-SELECT COUNT(*) AS equipos FROM equipo;          -- Esperado: 6
-SELECT COUNT(*) AS jugadores FROM jugador;        -- Esperado: 31
-SELECT COUNT(*) AS partidos FROM partido;        -- Esperado: 15 tras el complemento
+SELECT COUNT(*) AS equipos FROM equipo;           -- Esperado: 6
+SELECT COUNT(*) AS jugadores FROM jugador;         -- Esperado: 31
+SELECT COUNT(*) AS partidos FROM partido;         -- Esperado: 15
 SELECT COUNT(*) AS jugados FROM partido
-WHERE estado = 'jugado';                          -- Esperado: 9
+WHERE estado = 'jugado';                           -- Esperado: 9
 
 SELECT numero_fecha, COUNT(*) AS partidos
 FROM partido
 GROUP BY numero_fecha
-ORDER BY numero_fecha;                           -- Esperado: 3 por fecha (1 a 5)
+ORDER BY numero_fecha;                            -- Esperado: 3 en cada fecha (1 a 5)
 
-SELECT id_partido, estado FROM partido
-WHERE id_partido IN (13,14,15)
-ORDER BY id_partido;
+SELECT id_partido, estado
+FROM partido
+WHERE id_partido IN (13, 14, 15)
+ORDER BY id_partido;                               -- Todos programados
 ```
 
-Los números son **resultados esperados a partir de los INSERT**; deben confirmarse ejecutando las consultas. Una cantidad correcta por sí sola no prueba que funcionen todas las restricciones.
+Los valores anteriores son los resultados **esperados a partir del script**. Deben verificarse ejecutándolo en MySQL; no sustituyen las pruebas funcionales.
 
-## 4. Iniciar la aplicación web con Python
+## 4. Preparar Python
 
-> Esta sección es aplicable **una vez incorporados `app/`, `requirements.txt` y `.env.example`** al mismo repositorio. Esos archivos no están en el último `main` SQL recibido.
+Abrir la carpeta raíz de `ProyectoBD` en **VS Code** y abrir una terminal **PowerShell** en esa ubicación. Debe existir la carpeta `app/`.
 
-Abrir **PowerShell en la raíz de `ProyectoBD/`** y ejecutar:
+Verificar Python y crear un entorno virtual:
 
 ```powershell
 py --version
 py -m venv .venv
+```
+
+Instalar dependencias:
+
+```powershell
 .\.venv\Scripts\python.exe -m pip install -r requirements.txt
+```
+
+Crear el archivo de configuración local:
+
+```powershell
 Copy-Item .env.example .env
 ```
 
-Editar el archivo `.env` creado. Configurar:
+Editar **`.env`** con los datos de **tu servidor MySQL**. En una instalación local con los usuarios de demostración creados por `seguridad-roles.sql`, la estructura es:
 
 ```ini
-APP_SECRET_KEY=REEMPLAZAR_POR_UN_VALOR_LARGO_ALEATORIO
+APP_SECRET_KEY=CAMBIAR_POR_UN_SECRETO_LARGO_Y_ALEATORIO
 APP_HOST=127.0.0.1
 APP_PORT=5000
 COOKIE_SECURE=false
+
 DB_HOST=127.0.0.1
 DB_PORT=3306
 DB_NAME=torneo_futbol5
@@ -130,69 +137,85 @@ DB_PLAN_USER=planillero_user
 DB_PLAN_PASSWORD=PlanilleroPass2026*
 ```
 
-Los usuarios `login_user`, `admin_user` y `planillero_user` son **usuarios MySQL** creados por `seguridad-roles.sql` en el servidor local. Sus contraseñas deben coincidir con las vigentes en esa instalación. No subir el archivo `.env` a GitHub.
+Los usuarios **`login_user`, `admin_user` y `planillero_user` son cuentas de MySQL**, distintas de las cuentas de acceso web. Si las contraseñas de MySQL ya fueron modificadas en tu servidor, usar las vigentes. Si los usuarios existían antes de ejecutar `seguridad-roles.sql`, la instrucción `CREATE USER IF NOT EXISTS` **no cambia sus contraseñas**.
 
-Iniciar Flask:
+**No subir `.env` a GitHub**: incluye contraseñas. Para mantenerlo fuera del repositorio, agregar `.env`, `.venv/` y `__pycache__/` al archivo `.gitignore` local del proyecto.
+
+## 5. Levantar la aplicación web
+
+Con MySQL iniciado, la base instalada y el archivo `.env` configurado, ejecutar desde PowerShell en la raíz del proyecto:
 
 ```powershell
 .\.venv\Scripts\python.exe app\app.py
 ```
 
-Abrir **http://127.0.0.1:5000** en el navegador. El servidor Flask debe permanecer abierto mientras se utiliza la interfaz.
+Si Flask inicia correctamente, abrir en el navegador:
 
-**Cuentas web de demostración** (tabla `login`, diferentes de los usuarios MySQL):
+**http://127.0.0.1:5000**
 
-| Perfil | Correo | Contraseña de ejemplo |
-|---|---|---|
+La consola debe permanecer abierta mientras se usa la aplicación. Detener con `Ctrl + C`.
+
+### Cuentas web de ejemplo
+
+| Perfil | Correo | Contraseña |
+| --- | --- | --- |
 | Administrador | `admin@ucu.edu.uy` | `pass123` |
 | Planillero | `planillero@ucu.edu.uy` | `pass123` |
 
-Estas contraseñas son de **prueba local** y el SQL original las almacena en texto plano. **No exponer la aplicación en Internet** ni reutilizar esas credenciales en otros servicios.
+Son cuentas definidas en la tabla `login` del script de datos. Sus contraseñas están en texto plano por decisión de esta versión de demostración. **Usar solo en un entorno académico local, no publicar la aplicación en Internet.**
 
-## 5. Uso básico de la aplicación
+## 6. Funciones principales
 
-- **Administrador:** administra jugadores, equipos, planteles, complejos, canchas, turnos, ediciones, partidos y sanciones disciplinarias; consulta los reportes.
-- **Planillero:** accede a los partidos, registra participantes, goles y tarjetas, y marca un encuentro como jugado utilizando el procedimiento autorizado por MySQL.
-- **Reglas de negocio:** las claves, restricciones, triggers y procedimientos del SQL determinan la validez final de las operaciones; Python valida entradas y comunica errores.
+**Administrador:** puede utilizar los catálogos y formularios para administrar jugadores, facultades, ediciones, equipos, planteles, complejos, canchas, turnos, partidos, usuarios y sanciones disciplinarias. También puede consultar los reportes.
 
-El sistema distingue edición del torneo, fecha deportiva y día/turno del encuentro. Un partido cancelado no cuenta como partido jugado. Los partidos históricos de agosto tienen restricciones de corrección de resultados de 48 horas, así que para comprobar escrituras deben utilizarse escenarios de prueba apropiados.
+**Planillero:** puede consultar los partidos y registrar los participantes en planillas, goles y tarjetas; el cambio de un partido a estado `jugado` usa el procedimiento almacenado `sp_marcar_partido_jugado`.
 
-## 6. Reportes
+**Base de datos:** las claves, restricciones, triggers, vistas y procedimientos de los scripts SQL determinan la validez final de las operaciones. La interfaz Python envía sentencias parametrizadas y muestra errores cuando MySQL rechaza datos inválidos.
 
-`Scripts/consultas.sql` conserva las consultas SQL del equipo. La aplicación Python, una vez incorporada, muestra reportes parametrizados en `app/reports.py` (por edición, cuando corresponde). Se incluyen posiciones, goleadores, fair play, promedios de goles, utilización de canchas y turnos, distribución de jugadores, jugadores sin planilla, sanciones, estados de partidos y tres consultas adicionales: asistencia perfecta, jugadores inhabilitados y valla menos vencida.
+## 7. Reportes
 
-## 7. Pruebas mínimas antes de entregar
+- `Scripts/consultas.sql` conserva los reportes escritos en SQL por el equipo.
+- `app/reports.py` define sus versiones parametrizadas para la interfaz web.
 
-- [ ] Se crea la base y terminan todos los scripts sin errores.
-- [ ] Se comprueban 6 equipos, 31 jugadores, 15 partidos y 3 fechas jugadas en los datos de ejemplo.
-- [ ] Funcionan las conexiones MySQL desde Python y ambos inicios de sesión.
-- [ ] El administrador puede realizar los ABM previstos.
-- [ ] El planillero no puede modificar información de administración.
-- [ ] Los triggers rechazan equipos repetidos en la misma fecha, enfrentamiento contra sí mismo y participantes suspendidos.
-- [ ] Las tarjetas rojas y tres amarillas generan las sanciones previstas.
-- [ ] El resultado y la tabla de posiciones coinciden con los goles registrados.
-- [ ] Los reportes se ejecutan y muestran datos coherentes.
-- [ ] Se documentan los resultados reales de las pruebas en `docs/informe_final.md`.
+Entre los indicadores se incluyen tabla de posiciones, goleadores, fair play, goles por fecha y edición, uso de canchas y turnos, jugadores por facultad y tipo, inscriptos sin participación, sanciones y porcentaje de partidos por estado, además de las tres consultas adicionales incluidas en el proyecto.
 
-Se verificó **sintaxis de Python** del complemento en el entorno de preparación del documento, **no** su integración completa con un servidor MySQL real.
+## 8. Pruebas manuales pendientes
 
-## 8. Problemas habituales
+Después de iniciar correctamente el proyecto, registrar en el informe el resultado **real** de estas verificaciones:
 
-| Síntoma | Qué revisar |
-|---|---|
-| `Access denied for user 'root'` | Credenciales de la cuenta de instalación. `root` no es imprescindible, pero se necesita algún usuario con privilegios suficientes. |
-| `Can't connect to MySQL server` | Servicio MySQL iniciado, host/puerto, red y variables de `.env`. |
-| `Access denied ... login_user/admin_user` | Ejecutar `seguridad-roles.sql`; comprobar contraseñas y que los usuarios se crearon para `@localhost`. |
-| `No module named flask` | Instalar dependencias dentro de `.venv`. |
-| `Table ... doesn't exist` | Confirmar creación del esquema y que `.env` apunta a `torneo_futbol5`. |
-| Error de clave duplicada en el fixture | No volver a ejecutar INSERT de partidos ya creados. |
-| Error `DELIMITER` | Ejecutar el script completo con el ejecutor de scripts, no solo una sentencia seleccionada. |
+- [ ] Se crearon correctamente las 14 tablas y se ejecutaron los scripts sin errores.
+- [ ] Los datos de prueba muestran 6 equipos, 31 jugadores, 15 partidos y 9 jugados.
+- [ ] El administrador y el planillero pueden iniciar sesión.
+- [ ] El administrador puede consultar, crear, modificar y eliminar registros permitidos.
+- [ ] El planillero no puede acceder a las operaciones exclusivas de administrador.
+- [ ] El registro de planillas, goles y tarjetas funciona en partidos habilitados.
+- [ ] Los triggers rechazan enfrentamientos inválidos y participantes suspendidos.
+- [ ] Se generan las sanciones por tarjeta roja y acumulación de tres amarillas.
+- [ ] El resultado se calcula a partir de los goles y los reportes se ejecutan correctamente.
 
-## 9. Documentación y decisiones
+Para probar operaciones de escritura, usar una edición de **prueba** y horarios válidos; los partidos históricos están sujetos a las reglas de estados y corrección de 48 horas.
 
-- **Informe técnico:** [`docs/informe_final.md`](docs/informe_final.md).
-- **SQL original:** `Scripts/` (se conservan sus decisiones de modelado y reglas).
-- **Entrega:** 06/11/2026; **defensa:** 13/11/2026, según la consigna.
-- Docker y Docker Compose no son obligatorios y **no forman parte de esta versión**.
+**Estado de la revisión:** comprobación estática de la estructura, scripts y sintaxis Python. **No se han acreditado todavía las pruebas anteriores en un servidor MySQL real.**
 
-El informe diferencia lo implementado en los archivos, lo integrado en la aplicación complementaria y lo que aún requiere pruebas manuales. Antes de la entrega, comprobar el estado real del repositorio y actualizar esas evidencias.
+## 9. Resolución de problemas
+
+| Problema | Qué revisar |
+| --- | --- |
+| `Access denied for user 'root'` | Las credenciales de la cuenta administrativa de MySQL; `root` no es obligatorio si existe otra cuenta con privilegios suficientes. |
+| `Access denied ... login_user` | Confirmar que se ejecutó `seguridad-roles.sql` y que las contraseñas en `.env` sean correctas. |
+| `Can't connect to MySQL server` | Servicio MySQL, dirección `DB_HOST`, puerto `DB_PORT` y firewall. |
+| `No module named flask` o `pymysql` | Instalar las dependencias con el Python del entorno virtual. |
+| `Table ... doesn't exist` | Verificar que se instalaron los scripts y que `DB_NAME=torneo_futbol5`. |
+| Error de claves duplicadas | Evitar ejecutar dos veces los scripts de datos sobre una base ya cargada. |
+| Error con `DELIMITER` | Ejecutar el archivo de triggers completo con el ejecutor de scripts SQL de DataGrip. |
+| Aparece un error al editar un partido histórico | Revisar el estado del partido y el límite de 48 horas en los triggers. |
+
+## 10. Documentación y entrega
+
+- **Informe del proyecto:** `Informe BD.docx`.
+- **SQL:** carpeta `Scripts/`.
+- **Backend y frontend:** carpeta `app/`.
+- **Fecha de entrega:** 6 de noviembre de 2026.
+- **Defensa:** 13 de noviembre de 2026.
+
+Antes de entregar, completar la bitácora con las contribuciones reales del equipo y documentar las pruebas manuales realizadas. Este README describe la **estructura del ZIP revisado** y no afirma que la aplicación esté funcionalmente validada sin esas pruebas.
