@@ -185,10 +185,16 @@ INSERT INTO partido (id_partido, id_torneo, numero_fecha, id_equipo_local, id_eq
 (11, 1, 4, 2, 4, '2026-11-09', 2, 'Cancha 1', 1, 'postergado'),
 (12, 1, 4, 3, 6, '2026-11-09', 3, 'Cancha 1', 1, 'programado');
 
--- Fecha 5 (partido cancelado)
-INSERT INTO partido (id_partido, id_torneo, numero_fecha, id_equipo_local, id_equipo_visitante, dia, id_turno, nombre_cancha, id_complejo, estado) VALUES
-(13, 1, 5, 1, 6, '2026-11-16', 1, 'Cancha 1', 1, 'cancelado');
-
+-- Fecha 5
+INSERT INTO partido (
+    id_partido, id_torneo, numero_fecha,
+    id_equipo_local, id_equipo_visitante,
+    dia, id_turno, nombre_cancha, id_complejo, estado
+) VALUES
+    (13, 1, 5, 1, 6, '2026-11-16', 1, 'Cancha 1', 1, 'programado'),
+    (14, 1, 5, 2, 3, '2026-11-16', 2, 'Cancha 1', 1, 'programado'),
+    (15, 1, 5, 4, 5, '2026-11-16', 3, 'Cancha 1', 1, 'programado');
+    
 -- 11. PLANILLA_PARTIDO (Jugadores que firman planilla en los partidos)
 
 -- Partido 1
