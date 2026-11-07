@@ -6,8 +6,6 @@
 
 Aplicación para gestionar las ediciones del torneo, jugadores, equipos, planteles, complejos, canchas, fixture, planillas, goles, tarjetas, sanciones y reportes. El proyecto utiliza **MySQL** para persistencia y reglas de integridad, y **Python + Flask** para la interfaz web. El acceso a la base se realiza con **PyMySQL**, mediante SQL directo y **sin ORM**.
 
-> **Estado de la versión:** el último ZIP del repositorio contiene `Scripts/`, `app/` e `Informe BD.docx`. Se verificó la estructura y la sintaxis del código Python, pero **no se ha confirmado su ejecución integral contra MySQL**. Para instalar el proyecto desde cero también se necesitan `requirements.txt` y `.env.example`, que no venían en ese ZIP y se suministran junto con este README.
-
 ## 1. Estructura del proyecto
 
 ```text
@@ -63,13 +61,9 @@ El repositorio también contiene el PDF del avance y algunos archivos de configu
 
 6. Ante cualquier error, **detener la secuencia**, leer el mensaje y corregirlo antes de ejecutar el siguiente archivo. Ejecutar los scripts completos, especialmente `triggers-automaticos.sql`, que utiliza `DELIMITER`.
 
-**Importante:** no ejecutar `seguriad-roles.sql`; es un duplicado de `seguridad-roles.sql` con el nombre mal escrito.
-
 ### 3.1. Datos de prueba y fixture
 
-El `insercion-datos.sql` del último ZIP ya incorpora los **15 partidos** necesarios para una liga de una rueda con 6 equipos. Se distribuyen en 5 fechas con 3 partidos en cada una. Los partidos **13, 14 y 15** de la fecha 5 figuran como **`programado`**.
-
-**No es necesario añadir otro script de fixture ni volver a insertar los partidos 13, 14 y 15.** La versión más antigua de los datos tenía el partido 13 cancelado, pero la versión actual lo deja programado.
+El `insercion-datos.sql` incorpora los **15 partidos** necesarios para una liga de una rueda con 6 equipos. Se distribuyen en 5 fechas con 3 partidos en cada una. Los partidos **13, 14 y 15** de la fecha 5 figuran como **`programado`**.
 
 Al terminar, comprobar desde una consola SQL:
 
@@ -174,43 +168,12 @@ Son cuentas definidas en la tabla `login` del script de datos. Sus contraseñas 
 
 ## 7. Reportes
 
-- `Scripts/consultas.sql` conserva los reportes escritos en SQL por el equipo.
+- `Scripts/consultas.sql` conserva los reportes escritos en SQL.
 - `app/reports.py` define sus versiones parametrizadas para la interfaz web.
 
 Entre los indicadores se incluyen tabla de posiciones, goleadores, fair play, goles por fecha y edición, uso de canchas y turnos, jugadores por facultad y tipo, inscriptos sin participación, sanciones y porcentaje de partidos por estado, además de las tres consultas adicionales incluidas en el proyecto.
 
-## 8. Pruebas manuales pendientes
-
-Después de iniciar correctamente el proyecto, registrar en el informe el resultado **real** de estas verificaciones:
-
-- [ ] Se crearon correctamente las 14 tablas y se ejecutaron los scripts sin errores.
-- [ ] Los datos de prueba muestran 6 equipos, 31 jugadores, 15 partidos y 9 jugados.
-- [ ] El administrador y el planillero pueden iniciar sesión.
-- [ ] El administrador puede consultar, crear, modificar y eliminar registros permitidos.
-- [ ] El planillero no puede acceder a las operaciones exclusivas de administrador.
-- [ ] El registro de planillas, goles y tarjetas funciona en partidos habilitados.
-- [ ] Los triggers rechazan enfrentamientos inválidos y participantes suspendidos.
-- [ ] Se generan las sanciones por tarjeta roja y acumulación de tres amarillas.
-- [ ] El resultado se calcula a partir de los goles y los reportes se ejecutan correctamente.
-
-Para probar operaciones de escritura, usar una edición de **prueba** y horarios válidos; los partidos históricos están sujetos a las reglas de estados y corrección de 48 horas.
-
-**Estado de la revisión:** comprobación estática de la estructura, scripts y sintaxis Python. **No se han acreditado todavía las pruebas anteriores en un servidor MySQL real.**
-
-## 9. Resolución de problemas
-
-| Problema | Qué revisar |
-| --- | --- |
-| `Access denied for user 'root'` | Las credenciales de la cuenta administrativa de MySQL; `root` no es obligatorio si existe otra cuenta con privilegios suficientes. |
-| `Access denied ... login_user` | Confirmar que se ejecutó `seguridad-roles.sql` y que las contraseñas en `.env` sean correctas. |
-| `Can't connect to MySQL server` | Servicio MySQL, dirección `DB_HOST`, puerto `DB_PORT` y firewall. |
-| `No module named flask` o `pymysql` | Instalar las dependencias con el Python del entorno virtual. |
-| `Table ... doesn't exist` | Verificar que se instalaron los scripts y que `DB_NAME=torneo_futbol5`. |
-| Error de claves duplicadas | Evitar ejecutar dos veces los scripts de datos sobre una base ya cargada. |
-| Error con `DELIMITER` | Ejecutar el archivo de triggers completo con el ejecutor de scripts SQL de DataGrip. |
-| Aparece un error al editar un partido histórico | Revisar el estado del partido y el límite de 48 horas en los triggers. |
-
-## 10. Documentación y entrega
+## 8. Documentación y entrega
 
 - **Informe del proyecto:** `Informe BD.docx`.
 - **SQL:** carpeta `Scripts/`.
